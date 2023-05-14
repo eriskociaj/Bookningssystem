@@ -1,0 +1,392 @@
+package bookbus;
+
+import java.util.Calendar;
+import java.util.Random;
+import java.util.Scanner;
+
+public class bookBus {
+    private static String[][] passengers = new String[21][4]; // 21 passengers, each with 4 attributes
+    static Scanner scanner = new Scanner(System.in);
+
+    public static void main(String[] args) {
+        while (true) {
+            try (Scanner scanner = new Scanner(System.in)) {
+                int choice;
+                do {
+                    System.out.println("\nMenu:");
+                    System.out.println("1. Add a passenger");
+                    System.out.println("2. Check number of free seats and book a window seat");
+                    System.out.println("3. Show content");
+                    System.out.println("4. Calculate profit");
+                    System.out.println("5. Exit");
+                    System.out.print("\nEnter your choice: ");
+                    try {
+                        choice = scanner.nextInt();
+                        scanner.nextLine();
+                    } catch (Exception e) {
+                        System.out.println("Invalid answer, try again");
+                        choice = 0;
+                        scanner.nextLine();
+                    }
+
+                    switch (choice) {
+                        case 1:
+                            addPassenger();
+                            break;
+                        case 2:
+                            checkFreeSeats();
+                            break;
+                        case 3:
+                            showContent();
+                            continue;
+                        case 4:
+                            double profit = calculateProfit(passengers, 0, 0, 0);
+                            System.out.printf("\nThe total profit is %.2f SEK\n", profit);
+                            break;
+                        case 5:
+                            System.out.println("\nExiting the booking system...");
+                            break;
+                    }
+                } while (choice != 5);
+            }
+
+        }
+    }
+
+    private static void addPassenger() {
+        Scanner scanner = new Scanner(System.in);
+        String ssn;
+        boolean validSSN = false;
+        int passengerIndex = -1;
+
+        do {
+            System.out.print("\nEnter your Social Security Number (YYYYMMDD-XXXX): ");
+            ssn = scanner.nextLine();
+            validSSN = validateSSN(ssn); // validate the SSN format
+            if (!validSSN) {
+                System.out.println("Invalid Social Security Number format. Please try again.");
+            } else if (passengerExists(ssn)) { // check if the passenger already exists
+                System.out.println("The passenger already exists.");
+                return;
+            }
+        } while (!validSSN || passengerExists(ssn));
+
+        // Find an empty slot for the new passenger
+        for (int i = 0; i < passengers.length; i++) {
+            if (passengers[i][0] == null) {
+                passengerIndex = i;
+                break;
+            }
+        }
+
+        System.out.print("Enter the first name: ");
+        passengers[passengerIndex][1] = scanner.nextLine();
+        System.out.print("Enter the surname: ");
+        passengers[passengerIndex][2] = scanner.nextLine();
+
+        while (true) {
+            System.out.print("Enter the gender (M/F): ");
+            String gender = scanner.nextLine().toUpperCase();
+            if (gender.equals("M") || gender.equals("F")) {
+                passengers[passengerIndex][3] = gender;
+                break;
+            } else {
+                System.out.println("Invalid answer, try again.");
+            }
+        }
+
+        while (true) {
+            System.out.print("Do you want to book a window seat? (Y/N): ");
+            String answer = scanner.nextLine().toUpperCase();
+            if (answer.equals("Y")) {
+                if (bookWindowSeat(ssn)) {
+                    System.out.println("Window seat booked successfully!");
+                    passengers[passengerIndex][0] = ssn; // add the new passenger to the list
+                    break;
+                } else {
+                    System.out.println("All window seats are booked. Booking a random seat instead.");
+                    if (bookRandomSeat(ssn)) {
+                        System.out.println("Random seat booked successfully!");
+                        passengers[passengerIndex][0] = ssn; // add the new passenger to the list
+                        break;
+                    }
+                }
+            } else if (answer.equals("N")) {
+                if (bookRandomSeat(ssn)) {
+                    System.out.println("Random seat booked successfully!");
+                    passengers[passengerIndex][0] = ssn; // add the new passenger to the list
+                    break;
+                }
+            } else {
+                System.out.println("Invalid answer, try again.");
+            }
+        }
+
+        System.out.println("\nPassenger added successfully!");
+    }
+
+    private static boolean bookWindowSeat(String ssn) {
+        int seatIndex = -1;
+        for (int i = 0; i < passengers.length; i++) {
+            if (i == 0 || i == 1 || i == 10 || i == 11) { // check if seat is a window seat
+                if (passengers[i][0] != null && passengers[i][0].equals(ssn)) { // check if passenger with given SSN
+                                                                                // already booked
+                    System.out.println("The passenger with SSN " + ssn + " has already booked a window seat.");
+                    return false;
+                }
+                if (passengers[i][0] == null) { // check if seat is available
+                    seatIndex = i;
+                    break;
+                }
+            }
+        }
+        if (seatIndex == -1) {
+            System.out.println("All window seats are booked.");
+            return false;
+        } else {
+            passengers[seatIndex][3] = "X"; // book seat
+            System.out.println("Window seat " + seatIndex + " is booked for the passenger with SSN " + ssn + ".");
+            return true;
+        }
+    }
+    
+
+    private static void checkFreeSeats() {
+        int freeWindowSeats = 0;
+        int freeRandomSeats = 0;
+
+        for (int i = 0; i < passengers.length; i++) {
+            if (i == 0 || i == 1 || i == 10 || i == 11) { // check if seat is a window seat
+                if (passengers[i][0] == null) { // check if seat is available
+                    freeWindowSeats++;
+                }
+            } else {
+                if (passengers[i][0] == null) { // check if seat is available
+                    freeRandomSeats++;
+                }
+            }
+        }
+
+        System.out.println("Number of free window seats: " + freeWindowSeats);
+        System.out.println("Number of free random seats: " + freeRandomSeats);
+    }
+
+    // validate the SSN format
+    private static boolean validateSSN(String ssn) {
+        if (ssn.length() != 13) {
+            return false;
+        }
+        if (!ssn.matches("\\d{8}-\\d{4}")) { // Check for format YYMMDD-XXXX
+            return false;
+        }
+        String year = ssn.substring(0, 4);
+        String month = ssn.substring(4, 6);
+        String day = ssn.substring(6, 8);
+        if (Integer.parseInt(month) > 12 || Integer.parseInt(month) == 0) {
+            return false;
+        }
+        if (Integer.parseInt(day) > 31 || Integer.parseInt(day) == 0) {
+            return false;
+        }
+        return true;
+    }
+    
+    
+
+    // check if the passenger with the given SSN already exists
+    private static boolean passengerExists(String ssn) {
+        boolean found = false;
+        for (int i = 0; i < passengers.length; i++) {
+            if (passengers[i][0] != null && passengers[i][0].equals(ssn)) {
+                found = true;
+                break;
+            }
+        }
+        return found;
+    }
+
+    private static boolean bookRandomSeat(String ssn) {
+        int seatIndex = -1;
+        Random random = new Random();
+        while (seatIndex == -1) {
+            int randomSeat = random.nextInt(21);
+            if (passengers[randomSeat][0] == null) {
+                seatIndex = randomSeat;
+            }
+        }
+        passengers[seatIndex][3] = "X";
+        System.out.println("Seat " + seatIndex + " is booked for the passenger with SSN " + ssn + ".");
+        return true;
+    }
+    
+
+    static void showContent() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("\n1. Find reservation");
+        System.out.println("2. Remove booking");
+        System.out.println("3. List all people who are over and under 18 years of age");
+        System.out.println("4. Number of reservations available");
+
+        System.out.print("\nEnter your choice: ");
+        int choice = scanner.nextInt();
+
+        switch (choice) {
+            case 1:
+                System.out.print("\nEnter the social security number: ");
+                String ssn = scanner.next();
+                int seatNumber = findPassenger(ssn);
+                if (seatNumber == -1) {
+                    System.out.println("Passenger not found.");
+                } else {
+                    System.out.printf("The passenger is in seat %d.\n", seatNumber + 1);
+                }
+                break;
+            case 2:
+                System.out.print("\nEnter the social security number or name: ");
+                String searchQuery = scanner.next();
+                int seatNum = removeBooking(searchQuery);
+                if (seatNum == -1) {
+                    System.out.println("Passenger not found.");
+                } else {
+                    System.out.printf("Booking removed from seat %d.\n", seatNum + 1);
+                }
+                break;
+            case 3:
+                int over18 = 0;
+                int under18 = 0;
+                for (int i = 0; i < passengers.length; i++) {
+                    if (passengers[i][0] != null) { // if the seat is booked
+                        
+                int age = calculateAgeFromSSN(passengers[i][0]);
+
+                        if (age < 18) {
+                            under18++;
+                        } else {
+                            over18++;
+                        }
+                    }
+                }
+                System.out.printf("\nThere are %d passengers under 18 years old and %d passengers over 18 years old.\n",
+                        under18, over18);
+                break;
+            case 4:
+                int existingPassenger = 0;
+                sortPassengersBySSN();
+
+                for (int i = 0; i < passengers.length; i++) {
+                    if (passengers[i][0] != null) {
+                        existingPassenger++;
+                        System.out.printf("\n%s %s %s %s\n", passengers[i][0], passengers[i][1], passengers[i][2],
+                                i + 1);
+                    }
+                }
+                if (existingPassenger == 0) {
+                    System.out.println("\nThere are no passengers.");
+                }
+                break;
+            default:
+                System.out.println("\nInvalid choice, please try again.");
+                break;
+        }
+    }
+
+    private static int findPassenger(String ssn) {
+        for (int i = 0; i < passengers.length; i++) {
+            if (passengers[i][0] != null && passengers[i][0].equals(ssn)) { // if the seat is booked and the ssn matches
+                return i;
+            }
+        }
+        return -1; // passenger not found
+    }
+
+    private static int removeBooking(String searchQuery) {
+        for (int i = 0; i < passengers.length; i++) {
+            if (passengers[i][0] != null && (passengers[i][0].equals(searchQuery)
+                    || passengers[i][1].equals(searchQuery) || passengers[i][2].equals(searchQuery))) { // if the seat
+                                                                                                        // is booked and
+                                                                                                        // the ssn or
+                                                                                                        // name matches
+                passengers[i][0] = null;
+                passengers[i][1] = null;
+                passengers[i][2] = null;
+                passengers[i][3] = null;
+                return i;
+            }
+        }
+        return -1; // passenger not found
+    }
+
+    private static void sortPassengersBySSN() {
+        for (int i = 0; i < passengers.length - 1; i++) {
+            for (int j = i + 1; j < passengers.length; j++) {
+                if (passengers[i][0] != null && passengers[j][0] != null) { // if both seats are booked
+                    String dob1 = passengers[i][0].substring(0, 8); // date of birth for passenger i
+                    String dob2 = passengers[j][0].substring(0, 8); // date of birth for passenger j
+                    int ssn1 = Integer.parseInt(passengers[i][0].substring(9)); // swedish number for passenger i
+                    int ssn2 = Integer.parseInt(passengers[j][0].substring(9)); // swedish number for passenger j
+                    if (dob1.compareTo(dob2) > 0 || (dob1.equals(dob2) && ssn1 > ssn2)) {
+                        // swap passengers
+                        String[] temp = passengers[i];
+                        passengers[i] = passengers[j];
+                        passengers[j] = temp;
+                    }
+                }
+            }
+        }
+    }
+    
+    
+    private static int calculateAgeFromSSN(String ssn) {
+        // Extract the year, month, and day from the SSN
+        int year = Integer.parseInt(ssn.substring(0, 4));
+        int month = Integer.parseInt(ssn.substring(4, 6));
+        int day = Integer.parseInt(ssn.substring(6, 8));
+    
+        // Calculate the current year and month
+        Calendar now = Calendar.getInstance();
+        int currentYear = now.get(Calendar.YEAR);
+        int currentMonth = now.get(Calendar.MONTH) + 1;
+    
+        // Calculate the age based on the current year and month
+        int age = currentYear - year;
+        if (month > currentMonth) {
+            age--;
+        } else if (month == currentMonth) {
+            int currentDay = now.get(Calendar.DAY_OF_MONTH);
+            if (day > currentDay) {
+                age--;
+            }
+        }
+    
+        return age;
+    }
+    
+    private static double calculateProfit(String[][] passengers, double adultProfit, double childProfit, double pensionerProfit) {
+        for (int i = 0; i < passengers.length; i++) {
+            if (passengers[i][0] != null) { // if the seat is booked
+                
+                int age = calculateAgeFromSSN(passengers[i][0]);
+    
+                if (age >= 18 && age <= 69) { // adult
+                    adultProfit += 299.90;
+                } else if (age >= 6 && age <= 17) { // child
+                    childProfit += 149.90;
+                } else if (age >= 70) { // pensioner
+                    pensionerProfit += 199.90;
+                }
+            }
+        }
+    
+        double totalProfit = adultProfit + childProfit + pensionerProfit;
+    
+        System.out.println("\nProfit Report:");
+        System.out.println("Adult Profit:" + adultProfit + " SEK");
+        System.out.println("Child Profit:" + childProfit + " SEK");
+        System.out.println("Pensioner Profit: " + pensionerProfit + " SEK");
+        System.out.println("Total Profit: " + totalProfit + " SEK\n");
+    
+        return totalProfit;
+    }
+    }
+    
+    
