@@ -1,74 +1,84 @@
-import java.util.Calendar;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.Calendar; 
+import java.util.Random; 
+import java.util.Scanner; 
 
 public class bookBus {
-    private static String[][] passengers = new String[21][4]; // 21 passengers, each with 4 attributes
-    static Scanner scanner = new Scanner(System.in);
+    private static String[][] passengers = new String[21][4]; // 21 total seats which 4 are window seats
+                                                               
+    static Scanner scanner = new Scanner(System.in); // create a Scanner object to read user input
 
     public static void main(String[] args) {
-        while (true) {
-            try (Scanner scanner = new Scanner(System.in)) {
-                int choice;
+        while (true) { // loop until user chooses to exit
+            try (Scanner scanner = new Scanner(System.in)) { 
+                int choice; // variable to store user's menu choice
                 do {
-                    System.out.println("\nMenu:");
+                    System.out.println("\nMenu:"); // display the menu options
                     System.out.println("1. Add a passenger");
                     System.out.println("2. Check number of free seats and book a window seat");
                     System.out.println("3. Show content");
                     System.out.println("4. Calculate profit");
                     System.out.println("5. Exit");
-                    System.out.print("\nEnter your choice: ");
+                    System.out.print("\nEnter your choice: "); // prompt the user to enter their choice
                     try {
-                        choice = scanner.nextInt();
-                        scanner.nextLine();
-                    } catch (Exception e) {
-                        System.out.println("Invalid answer, try again");
-                        choice = 0;
-                        scanner.nextLine();
+                        choice = scanner.nextInt(); // read the user's choice
+                        scanner.nextLine(); // consume the newline character
+                    } catch (Exception e) { // if an exception occurs
+                        System.out.println("Invalid answer, try again"); // display an error message
+                        choice = 0; // set the choice to an invalid value
+                        scanner.nextLine(); // consume the newline character
                     }
 
-                    switch (choice) {
-                        case 1:
-                            addPassenger();
+                    switch (choice) { // check the user's choice
+                        case 1: // if the user chose to add a passenger
+                            addPassenger(); // call the addPassenger() method
                             break;
-                        case 2:
-                            checkFreeSeats();
+                        case 2: // if the user chose to check free seats and book a window seat
+                            checkFreeSeats(); // call the checkFreeSeats() method
                             break;
-                        case 3:
-                            showContent();
-                            continue;
-                        case 4:
-                            double profit = calculateProfit(passengers, 0, 0, 0);
-                            System.out.printf("\nThe total profit is %.2f SEK\n", profit);
+                        case 3: // if the user chose to show the content
+                            showContent(); // call the showContent() method
+                            continue; // continue to the next iteration of the loop
+                        case 4: // if the user chose to calculate profit
+                            double profit = calculateProfit(passengers, 0, 0, 0); // calculate the profit
+                            System.out.printf("\nThe total profit is %.2f SEK\n", profit); // display the profit
                             break;
-                        case 5:
-                            System.out.println("\nExiting the booking system...");
+                        case 5: // if the user chose to exit
+                            System.out.println("\nExiting the booking system..."); // display a goodbye message
                             break;
                     }
-                } while (choice != 5);
+                } while (choice != 5); // repeat until the user chooses to exit
             }
 
         }
     }
 
     private static void addPassenger() {
-        Scanner scanner = new Scanner(System.in);
-        String ssn;
-        boolean validSSN = false;
-        int passengerIndex = -1;
+        Scanner scanner = new Scanner(System.in); 
+        String ssn; // variable to store passenger's social security number
+        boolean validSSN = false; // variable to store if the social security number is valid
+        int passengerIndex = -1; // variable to store the index of the passenger in the passengers array
 
+ 
         do {
+            // Prompt user for Social Security Number
             System.out.print("\nEnter your Social Security Number (YYYYMMDD-XXXX): ");
             ssn = scanner.nextLine();
-            validSSN = validateSSN(ssn); // validate the SSN format
+        
+            // Validate the SSN format
+            validSSN = validateSSN(ssn);
+        
+            // If SSN format is invalid, prompt user to try again
             if (!validSSN) {
                 System.out.println("Invalid Social Security Number format. Please try again.");
-            } else if (passengerExists(ssn)) { // check if the passenger already exists
+            }
+            // If the passenger already exists, return
+            else if (passengerExists(ssn)) {
                 System.out.println("The passenger already exists.");
                 return;
             }
+        // Repeat until a valid SSN is entered and the passenger doesn't already exist
         } while (!validSSN || passengerExists(ssn));
-
+        
         // Find an empty slot for the new passenger
         for (int i = 0; i < passengers.length; i++) {
             if (passengers[i][0] == null) {
@@ -76,12 +86,14 @@ public class bookBus {
                 break;
             }
         }
-
+        
+        // Prompt user for first name and surname and store them in the passengers array
         System.out.print("Enter the first name: ");
         passengers[passengerIndex][1] = scanner.nextLine();
         System.out.print("Enter the surname: ");
         passengers[passengerIndex][2] = scanner.nextLine();
-
+        
+        // Prompt user for gender (M/F) and store it in the passengers array
         while (true) {
             System.out.print("Enter the gender (M/F): ");
             String gender = scanner.nextLine().toUpperCase();
@@ -92,16 +104,20 @@ public class bookBus {
                 System.out.println("Invalid answer, try again.");
             }
         }
-
+        
+        // Prompt user if they want to book a window seat and book a seat accordingly
         while (true) {
             System.out.print("Do you want to book a window seat? (Y/N): ");
             String answer = scanner.nextLine().toUpperCase();
             if (answer.equals("Y")) {
+                // Book a window seat if available
                 if (bookWindowSeat(ssn)) {
                     System.out.println("Window seat booked successfully!");
                     passengers[passengerIndex][0] = ssn; // add the new passenger to the list
                     break;
-                } else {
+                }
+                // If no window seats are available, book a random seat
+                else {
                     System.out.println("All window seats are booked. Booking a random seat instead.");
                     if (bookRandomSeat(ssn)) {
                         System.out.println("Random seat booked successfully!");
@@ -110,6 +126,7 @@ public class bookBus {
                     }
                 }
             } else if (answer.equals("N")) {
+                // Book a random seat
                 if (bookRandomSeat(ssn)) {
                     System.out.println("Random seat booked successfully!");
                     passengers[passengerIndex][0] = ssn; // add the new passenger to the list
@@ -119,8 +136,10 @@ public class bookBus {
                 System.out.println("Invalid answer, try again.");
             }
         }
-
+        
+        // Inform user that passenger has been added successfully
         System.out.println("\nPassenger added successfully!");
+        
     }
 
     private static boolean bookWindowSeat(String ssn) {
